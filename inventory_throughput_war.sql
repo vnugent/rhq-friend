@@ -1,4 +1,3 @@
-
 -- committed resources by minute
 CREATE OR REPLACE VIEW res_committed AS
     select count(*), date_trunc('minute', to_timestamp(itime/1000)) as timestamp  from rhq_resource where inventory_status='COMMITTED'  group by 2 order by timestamp;
