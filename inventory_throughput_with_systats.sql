@@ -16,7 +16,7 @@ CREATE OR REPLACE VIEW inventory_with_sysstats AS
     ON res.timestamp = date_trunc('minute', to_timestamp(vmstat.ts));
 
 
-
+-- sync system statistics with inventory timestamp
 CREATE OR REPLACE VIEW inventory_with_sysstats_norm AS
    SELECT 
         extract(epoch from age(inv.vmstat_ts, (select min(i.vmstat_ts) from inventory_with_sysstats i))) + 1 as sec,
