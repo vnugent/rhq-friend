@@ -1,4 +1,4 @@
-DROP TABLE perf_vmstat;
+DROP TABLE perf_vmstat CASCADE;
 
 CREATE TABLE perf_vmstat(
                      source char(5),
