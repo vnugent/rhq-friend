@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+body {
+  overflow-y:scroll;
+}
+
+text {
+  font: 8px sans-serif;
+}
+
+svg {
+  display: block;
+}
+
+#inventory svg{
+  height: 200px;
+  min-width: 100px;
+  min-height: 100px;
+}
+#vmstat_agent svg{
+    height: 150;
+
+  min-width: 100px;
+  min-height: 100px;
+}
+#vmstat_rhq svg{
+    height: 150;
+
+  min-width: 100px;
+  min-height: 100px;
+}
+</style>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="./nv.d3.js" charset="utf-8"></script>
+<body>
+<div>
+  <div id="inventory">
+    <svg></svg>
+  </div>
+
+  <div id="vmstat_agent">
+    <svg></svg>
+  </div>
+
+   <div id="vmstat_rhq">
+    <svg></svg>
+  </div> 
+</div>
+<script>
+
+
+
+d3.csv("inventory.csv", 
+          function(rows) {
+            var rows = rows.map(function(d) {
+                              var date = new Date(Date.now() - +d.timestamp*60*1000 - 60*1000*2);
+                              return {"label": +d.timestamp*60, "value": +d.count}; 
+                            });
+//            console.log(rows);
+            drawInventory([{key:"inventory", values: rows}]);
+          }
+);
+
+
+
+
+function drawInventory(data) {
+  nv.addGraph(function() {
+     var chart = nv.models.discreteBarChart()
+          .x(function(d) { return d.label })
+          .y(function(d) { return d.value })
+          .tooltips(false)
+          .showValues(true);
+    
+      d3.select('#inventory svg')
+         .datum(data)
+         .transition().duration(500)
+         .attr('height', 200)
+         .call(chart);
+   
+     nv.utils.windowResize(chart.update);
+   
+     return chart;
+   });
+};
+
+
+function drawCPU(csv) {
+  d3.csv(csv + ".csv", 
+            function(rows) {
+              var usr=[];
+              var sys=[];
+              var wait=[];
+              var rows = rows.map(function(d) {
+                                    usr.push({x: +d.sec, y: +d.us});
+                                    sys.push({x: +d.sec, y: +d.sy});
+                                    wait.push({x: +d.sec, y: +d.wa});
+                                //return {x: +d.sec, y: +d.us}; 
+                              });
+  //            console.log(rows);
+
+              makeCPUGraph([{key: "usr", values: usr}, {key: "sys", values: sys}, {key: "wait", values: wait}],
+                          csv
+                );
+          }
+  );  
+} //drawCPU
+
+
+function makeCPUGraph(data, name) {
+     nv.addGraph(function() {
+         var chart =  nv.models.multiBarChart()
+                                  .stacked(true);
+        
+          d3.select("#" + name + " svg")
+             .datum(data)
+             .transition().duration(500)
+             .attr('height', 250)
+             .call(chart);
+       
+         nv.utils.windowResize(chart.update);
+       
+         return chart;
+       });
+}
+
+
+drawCPU("vmstat_agent");
+drawCPU("vmstat_rhq");
+
+</script>
+
