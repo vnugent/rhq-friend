@@ -1,7 +1,8 @@
 DROP TABLE perf_vmstat CASCADE;
 
 CREATE TABLE perf_vmstat(
-                     source char(5),
+                     source char(20),
+                     total_mem integer,
                      r  integer, 
                      b integer,
                      swpd integer, 
@@ -24,5 +25,5 @@ CREATE TABLE perf_vmstat(
 
 ALTER TABLE perf_vmstat OWNER TO rhqadmin;
 
-COPY perf_vmstat FROM '/tmp/rhq-server-vmstat.csv' DELIMITERS ',' CSV;
-COPY perf_vmstat FROM '/tmp/rhq-agent-vmstat.csv' DELIMITERS ',' CSV;
+COPY perf_vmstat FROM '/tmp/rhq-server-vmstat.txt' DELIMITERS ',' CSV;
+COPY perf_vmstat FROM '/tmp/rhq-agent-vmstat.txt' DELIMITERS ',' CSV;
