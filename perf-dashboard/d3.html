@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Test</title>
+        <style>
+        path { 
+    stroke: darkorange;
+    stroke-width: 1;
+    fill: none;
+}
+body {
+     font-family: sans-serif;
+    font-size: 12px;    
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #C0C0C0;
+     stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+#inventory rect {
+fill: lightsteelblue
+}
+.axis text {
+    font-family: sans-serif;
+    font-size: 7px;
+}
+
+svg text {
+    font-family: sans-serif;
+    font-size: 7px;    
+}
+
+svg rect {
+    fill: SlateBlue;
+}
+
+.label {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    font-size: 10px;
+}
+
+.grid .tick {
+    stroke: lightgrey;
+    opacity: 0.5;
+     stroke-dasharray: 2,3;
+}
+.grid path {
+      stroke-width: 0;
+}
+
+
+.timeline  svg{
+    background: #DCDCDC;
+}
+.chart {
+    margin-top: 15px;
+}
+
+.agent svg {
+    background: SeaShell;
+}
+
+.server svg {
+background: WhiteSmoke;
+}
+
+
+</style>       
+        <script type="text/javascript" src="d3.v3.js"></script>
+    </head>
+    <body>
+        timeline
+        <div class="timeline" title="timeline hh:mm"></div>
+
+        <div id="inventory" title="Inventory histogram" data-yTitle="Committed Resources"></div>
+        Agent
+        <div id="agent_cpu"         title="Agent CPU (usr+sys)"     data-yTitle="cpu" class="agent cpu"></div>
+        <div id="agent_full_gc"     title="Agent Full GC Pauses"    data-yTitle="second"  class="agent gc"></div>
+        <div id="agent_pMemUsed"    title="Agent OS %Mem Used"      data-yTitle="%" class="agent mem"></div>
+        <div id="agent_MemCache"    title="Agent OS Mem Cache"      data-yTitle="MB" class="agent mem"></div>
+        Server
+        <div id="server_cpu"        title="Server CPU (usr+sys)"   data-yTitle="cpu" class="server cpu"></div>
+        <div id="server_full_gc"    title="Server Full GC Pauses"  data-yTitle="second" class="server gc"></div>
+        <div id="server_pMemUsed"   title="Server %Mem Used"       data-yTitle="%" class="server mem"></div>
+         <div id="server_MemCache"  title="Server Mem Cache"       data-yTitle="MB" class="server mem"></div>
+    
+        <div class="timeline"></div>        
+
+        <script type="text/javascript">
+           
+            var w = 2000;
+            var h = 100;
+            var topPadding = 10;
+            var leftPadding = 50;
+
+            var dateZero = new Date(1970,0,1,0,0);
+            var formatTime = d3.time.format("%H:%M");
+
+            var xScale = d3.time.scale()
+                     .domain([dateZero, toDate(2000)])
+                     .range([leftPadding, w]);  
+
+
+function makePlainXAxis() {
+    return d3.svg.axis().scale(xScale)
+                .orient("bottom").ticks(d3.time.minutes, 2)
+                 .tickFormat(function(d){
+                    return ''; 
+                });
+               
+}
+
+function drawTimeline() {
+    var h = 20;
+             var xAxis = d3.svg.axis().scale(xScale)
+                .orient("bottom").ticks(d3.time.minutes, 2)
+                .tickFormat(function(d){
+                    return formatTime( d ); 
+                });
+                   
+    var svg = d3.selectAll(".timeline")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);  
+    svg.append("g")         // Add the X 
+        .attr("class", "axis")
+        .attr("transform", "translate(0," + 0 + ")")
+        .call(xAxis);                  
+}
+
+function make_x_axis() {        
+    return d3.svg.axis()
+        .scale(xScale)
+         .orient("bottom")
+         .ticks(5)
+}
+
+function make_y_axis(scale) {        
+    return d3.svg.axis()
+        .scale(scale)
+        .orient("left")
+        .ticks(5)
+}
+
+/**
+* Create a generic bar graph
+*/
+function buildBarGraph(options) {
+
+            // set up default options 
+            var defaults = { 
+                height:     100,
+                label:      "off"
+            }; 
+
+            var options = processParams(defaults, options);
+
+            var yScale = d3.scale.linear()
+                    .nice()
+                     .domain([0, d3.max(options.data, function(d) { return d.y; })])
+                     .range([options.height - topPadding, topPadding]);  
+
+            var yAxis = d3.svg.axis()
+                  .scale(yScale)
+                  .orient("left")
+                  .ticks(5);
+
+            var svg = d3.select(options.id)
+                            .append("svg")
+                            .attr("width", w)
+                            .attr("height", options.height);
+
+            svg.selectAll("rect")
+                    .data(options.data)
+                    .enter()
+                    .append("rect")
+                    .attr("x", function(d, i) {
+                        return d.x; 
+                    })
+                    .attr("width", 1)
+                    .attr("y", function(d) {
+                        return yScale(d.y);  
+                    })
+                    .attr("height", function(d) {
+                        return options.height - topPadding - yScale(d.y);  
+                    });
+
+            svg.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "middle") 
+                .attr("transform", "translate("+ (leftPadding/4) +","+(options.height/2)+")rotate(-90)") 
+                .text(d3.select(options.id).attr("data-yTitle"));
+
+
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + leftPadding + ",0)")
+                .call(yAxis);
+
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", "translate("+ leftPadding + ",0)")
+                .call(make_y_axis(yScale)
+                .tickSize(-w, 0, 0)
+                .tickFormat("")
+            );  
+
+            // Add bottom X-axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (options.height - topPadding) + ")")
+                .call(makePlainXAxis());    
+
+            // Build label above each column
+            if (options.label == "on") {
+                console.log(options.label);
+                svg.append("g").selectAll("text")
+                        .data(options.data)
+                        .enter()
+                        .append("text")
+                        .text(function(d) {
+                            console.log(d);
+                            return d.y;
+                            })
+                        .attr("x", function(d, i) {
+                            return d.x; })
+                        .attr("y", function(d) {
+                            return yScale(d.y) -2 ;  
+                        });        
+            }
+}
+
+function toDate(second) {
+    return new Date(dateZero.getTime() + second*1000);
+}
+
+
+
+
+function buildCPUGraph(options) {
+
+                // set up default options 
+            var defaults = { 
+                height:     100,
+                label:      "off"
+            }; 
+
+            var options = processParams(defaults, options);
+            
+            var yScale = d3.scale.linear()
+                     .domain([0, d3.max(options.data, function(d) { return d.y; })])
+                     .rangeRound([options.height - topPadding, topPadding]);  
+
+            var xAxis = d3.svg.axis().scale(xScale)
+                .orient("bottom").ticks(d3.time.minutes, 2)
+                .tickFormat(function(d){
+                    return formatTime( d ); 
+                });
+            
+            var yAxis = d3.svg.axis()
+                  .scale(yScale)
+                  .orient("left")
+                  .ticks(5);
+
+            var valueline = d3.svg.line()
+                .x(function(d) { return xScale(toDate(d.x));})
+                .y(function(d) { return yScale(d.y); -topPadding });
+
+            var svg = d3.select(options.id)
+                            .append("svg")
+                            .attr("width", w)
+                            .attr("height", options.height);
+
+
+
+
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + leftPadding + ",0)")
+                .call(yAxis);
+
+            // title for y-axis
+            svg.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "middle") 
+                .attr("transform", "translate("+ (leftPadding/4) +","+(options.height / 2)+")rotate(-90)") 
+                .text(d3.select(options.id).attr("data-yTitle"));
+
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", "translate("+ leftPadding + ",0)")
+                .call(make_y_axis(yScale)
+                .tickSize(-w, 0, 0)
+                .tickFormat("")
+            );
+
+
+            // Add bottom X-axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (options.height - topPadding) + ")")
+                .call(makePlainXAxis());      
+            svg.append("path")      // Add the valueline path.
+                    .attr("d", valueline(options.data));
+
+}
+
+
+/**
+* Poor man parameter merge function
+*/
+function processParams(defaults, incoming) {
+    var merged;
+    for (var key in defaults) {
+        if(typeof incoming[key] === "undefined") incoming[key] = defaults[key];
+        
+    }
+   return incoming;
+}
+
+
+var vmstats = [{source: "agent", csv: "vmstat_agent.csv"},
+               {source: "server", csv: "vmstat_server.csv"}];
+
+vmstats.map(loadVMStats);
+
+function loadVMStats(csv) {
+    d3.csv(
+        csv.csv, 
+        function(rows) {
+            var cpu = [];
+            var pMemUsed = [];
+            var memCache = [];
+
+            rows.map(function(d) {
+                    cpu.push(  {x: +d.sec, y: +d.us + +d.sy}  );
+                    pMemUsed.push(  {x: +d.sec, y: 100 - (+d.free / +d.total_mem) * 100} );
+                    memCache.push(  {x: +d.sec, y: +d.cache / 1024} );
+            });
+            
+            buildCPUGraph({id: "#" +  csv.source + "_cpu", data: cpu});
+            buildCPUGraph({id: "#" +  csv.source + "_pMemUsed", data: pMemUsed, height: 60});
+            buildCPUGraph({id: "#" +  csv.source + "_MemCache", data: memCache});
+
+
+
+        }
+    );//d3.csv
+}
+
+
+
+var gc = [
+            {source: "agent", csv: "gc_agent.csv"},
+            {source: "server", csv: "gc_server.csv"}
+        ];
+
+gc.map(loadGC);
+
+
+loadInventory({id: "inventory", csv: "inventory_throughput.csv"});
+
+
+
+function loadGC(csv) {
+    d3.csv(csv.csv, 
+            function(rows) {
+                var fullPauses = [];
+                var totalPause = 0;
+                rows.map(function(d) {
+                            totalPause = totalPause + +d.gc_time;
+                            fullPauses.push({x: +d.sec, y: +d.gc_time});
+                              });
+                var divId = "#" + csv.source + "_full_gc";
+                var div = d3.select(divId);
+                var newTitle = div.property("title") + ". Total: " + totalPause.toFixed(1) + "s";
+                div.property("title", newTitle);
+                buildBarGraph({id: divId, data: fullPauses});
+            }
+    );
+}
+
+
+function loadInventory(csv) {
+   d3.csv(csv.csv, 
+            function(rows) {
+                var inventoryThroughput = [];
+                var total = 0;
+                var rows = rows.map(function(d) {
+                                total = total + +d.count;
+                                inventoryThroughput.push(   {x: +d.sec, y: +d.count}  ); 
+                              });
+                var divId = "#" + "inventory";
+                var div = d3.select(divId);
+                var newTitle = div.property("title") + ". Total: " + total + " Committed resources";
+                div.property("title", newTitle);
+                buildBarGraph( {id: divId, data: inventoryThroughput, height: 200, label: "on"} );
+            }
+  );
+
+}
+
+
+drawTimeline();
+
+        </script>
+    </body>
+</html>     
