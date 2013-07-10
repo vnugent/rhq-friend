@@ -16,7 +16,7 @@ ALTER TABLE res_committed_norm OWNER TO rhqadmin;
 
 COPY (
     select minute*60 as sec, count, timestamp from res_committed_norm
-) TO '/tmp/inventory_throughput.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/inventory_throughput_exp.csv' DELIMITER ',' CSV HEADER;
 
 
 
@@ -47,12 +47,12 @@ ALTER TABLE inventory_with_sysstats_norm OWNER TO rhqadmin;
 COPY (
     SELECT * FROM inventory_with_sysstats_norm WHERE source='rhq'
 )
-TO '/tmp/vmstat_server.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/vmstat_server_exp.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
     SELECT * FROM inventory_with_sysstats_norm WHERE source='agent'
 )
-TO '/tmp/vmstat_agent.csv' DELIMITER ',' CSV HEADER;
+TO '/tmp/vmstat_agent_exp.csv' DELIMITER ',' CSV HEADER;
 
 
 
@@ -81,8 +81,8 @@ ALTER TABLE perf_gc_inv_norm OWNER TO rhqadmin;
 
 COPY (
 select round(gc.sec) as sec, gc.ts, gc.type, gc.gc_time from perf_gc_inv_norm gc where source='agent' 
-) TO '/tmp/gc_agent.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/gc_agent_exp.csv' DELIMITER ',' CSV HEADER;
 
 COPY (
 select round(gc.sec) as sec, gc.ts, gc.type, gc.gc_time from perf_gc_inv_norm gc where source='rhq'
-) TO '/tmp/gc_server.csv' DELIMITER ',' CSV HEADER;
+) TO '/tmp/gc_server_exp.csv' DELIMITER ',' CSV HEADER;
